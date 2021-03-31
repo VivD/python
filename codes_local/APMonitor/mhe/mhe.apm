@@ -1,0 +1,188 @@
+Model
+  Parameters
+    ! Manipulated Variables
+    Tc = 300    ! Temperature of cooling jacket (K)
+
+    ! Parameters
+    q = 100     ! Volumetric Flowrate (m^3/sec)
+    V = 100     ! Volume of CSTR (m^3)
+    rho = 1000  ! Density of A-B Mixture (kg/m^3)
+    Cp = .239   ! Heat capacity of A-B Mixture (J/kg-K)
+    mdelH = 5e4 ! Heat of reaction for A->B (J/mol)
+                ! E - Activation energy in the 
+                !  Arrhenius Equation (J/mol)
+                ! R - Universal Gas Constant 
+                !  = 8.31451 J/mol-K
+                ! EoverR = E/R
+    EoverR = 8750
+    k0 = 7.2e10 ! Pre-exponential factor (1/sec)
+                ! U - Overall Heat Transfer 
+                !  Coefficient (W/m^2-K)
+                ! A - Area - this value is specific
+                !  for the U calculation (m^2)
+                ! UA = U * A
+    UA = 20000 ! correct = 50000
+    Caf = 1     ! Feed Concentration (mol/m^3)
+    Tf = 350    ! Feed Temperature (K)
+  End Parameters
+
+  Variables
+    ! Differential States
+    Ca = 0.87725294608097    ! Concentration of A in CSTR (mol/m^3)
+    T  = 324.475443431599    ! Temperature in CSTR (K)
+  End Variables
+  
+  Equations
+    ! note: the $ denotes time differential
+    !  (e.g. $x is dx/dt)
+
+    ! mole balance for species A
+    V * $Ca = q*(Caf-Ca) - k0*V*exp(-EoverR/T)*Ca
+
+    ! energy balance
+    rho*Cp*V * $T = q*rho*Cp*(Tf - T) + V*mdelH*k0*exp(-EoverR/T)*Ca + UA*(Tc-T)
+  End Equations
+End Model
+
+File *.plt
+  New Trend
+  t
+  tc
+End File
+
+! The rest of this code is to provide a graphical web interface (optional)
+File dash.htm
+ <style type="text/css">
+   canvas { border: 1px solid black; }
+ </style>
+
+ <center>
+  <h3>Control the Reactor</h3>
+  <div id="tc_msg"></div>
+  <div id="tr_msg"></div>
+
+  <canvas id="myDash"></canvas>
+
+  <script type="text/javascript">
+   var canvas=document.getElementById('myDash');
+   var nxtUpdate = (new Date()).getTime();         // Get current date / time
+   var updFreq = 3;                                // Frequency of update (sec)
+
+   canvas.width = "400";
+   canvas.height = "200";
+
+   nxtUpdate += updFreq*1000;                      // Initialize next update
+   var updInt = setInterval("main_update(canvas)",1000); // Check for updates every second
+
+   function main_update(canvas) {
+    var now = (new Date()).getTime();
+    var text_tc=canvas.getContext('2d');
+    var text_tr=canvas.getContext('2d');
+
+    if (now>=nxtUpdate) {
+      nxtUpdate += updFreq*1000;
+      get_dbs();
+
+      // retrieve variables of interest
+      var tc = Number(localStorage.getItem("tc.newval"));
+      var tr = Number(localStorage.getItem("t.model"));
+      var cooling=canvas.getContext('2d');
+      var reactor=canvas.getContext('2d');
+      var inlet=canvas.getContext('2d');
+      var outlet=canvas.getContext('2d');
+      var tc_color;
+      var tr_color;
+
+      if (tc<260) {
+         tc_color = '#0000FF';
+      } else if (tc<270) {
+         tc_color = '#0066FF';
+      } else if (tc<280) {
+         tc_color = '#00CCFF';
+      } else if (tc<290) {
+         tc_color = '#33FFFF';
+      } else if (tc<300) {
+         tc_color = '#99FFFF';
+      } else if (tc<310) {
+         tc_color = '#FFCCFF';
+      } else if (tc<320) {
+         tc_color = '#FFCCCC';
+      } else if (tc<330) {
+         tc_color = '#FF9999';
+      } else if (tc<340) {
+         tc_color = '#FF6666';
+      } else if (tc<350) {
+         tc_color = '#FF3333';
+      } else {
+         tc_color = '#FF0000';
+      }
+      cooling.fillStyle=tc_color;
+      cooling.fillRect(100,50,200,120);
+
+      if (tr<260) {
+         tr_color = '#0000FF';
+      } else if (tr<270) {
+         tr_color = '#0066FF';
+      } else if (tr<280) {
+         tr_color = '#00CCFF';
+      } else if (tr<290) {
+         tr_color = '#33FFFF';
+      } else if (tr<300) {
+         tr_color = '#99FFFF';
+      } else if (tr<310) {
+         tr_color = '#FFCCFF';
+      } else if (tr<320) {
+         tr_color = '#FFCCCC';
+      } else if (tr<330) {
+         tr_color = '#FF9999';
+      } else if (tr<340) {
+         tr_color = '#FF6666';
+      } else if (tr<350) {
+         tr_color = '#FF3333';
+      } else {
+         tr_color = '#FF0000';
+      }
+      reactor.fillStyle=tr_color;
+      reactor.fillRect(120,50,160,100);
+
+      inlet.lineWidth=2;
+      inlet.beginPath();
+      inlet.moveTo(50,25);
+      inlet.lineTo(150,25);
+      inlet.lineTo(150,50);
+      inlet.lineTo(145,45);
+      inlet.lineTo(155,45);
+      inlet.lineTo(150,50);
+      inlet.stroke();
+
+      outlet.lineWidth=2;
+      outlet.beginPath();
+      outlet.moveTo(50,25);
+      outlet.lineTo(150,25);
+      outlet.lineTo(150,50);
+      outlet.lineTo(145,45);
+      outlet.lineTo(155,45);
+      outlet.lineTo(150,50);
+      outlet.stroke();
+
+      //document.getElementById("tc_msg").innerHTML = "Cooling Jacket Temperature: " + tc;
+      //document.getElementById("tr_msg").innerHTML = "Inner Reactor Temperature : " + tr;
+
+      text_tc.clearRect(110,180,150,10);
+      text_tc.fillStyle = '#000';
+      text_tc.font = '10px arial';
+      text_tc.textBaseline = 'top';
+      text_tc.fillText('Cooling= '+tc + 'K',110,180);
+
+      text_tr.clearRect(250,25,150,10);
+      text_tr.fillStyle = '#000';
+      text_tr.font = '10px arial';
+      text_tr.textBaseline = 'top';
+      text_tr.fillText('Reactor= '+tr+'K',250,25);
+    }
+   } 
+
+  </script>
+ </center>
+
+End File

@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:leonardo",
+    "sketch": "tclab\\Python\\tclab\\tclab.ino",
+    "port": "COM5"
+}
